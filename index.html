@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodenFun - Create Games with Blocks!</title>
+    <title>CodenFun - Create Game</title>
     <style>
         body {
             font-family: 'Comic Sans MS', sans-serif;
@@ -12,13 +12,6 @@
         }
         h1 {
             color: #ff6f61;
-        }
-        #gameCanvas {
-            width: 600px;
-            height: 400px;
-            background-color: #e0f7fa;
-            border: 2px solid #00796b;
-            margin: 20px auto;
         }
         #workspace {
             margin: 20px auto;
@@ -36,120 +29,99 @@
             display: inline-block;
             cursor: grab;
             border-radius: 8px;
+            width: 150px;
+            text-align: center;
         }
-        #spriteSelector, #paintEditor {
-            margin-top: 10px;
+        #gameCanvas {
+            width: 600px;
+            height: 400px;
+            background-color: #e0f7fa;
+            border: 2px solid #00796b;
+            margin: 20px auto;
         }
     </style>
 </head>
 <body>
 
-<h1>Welcome to CodenFun!</h1>
-<h2>Drag blocks to move the dog or add more sprites!</h2>
+<h1>Build Your Game in CodenFun!</h1>
 
-<!-- Sprite Library -->
-<div id="spriteSelector">
-    <button onclick="addSprite('dog')">Add Dog Sprite</button>
-    <button onclick="addSprite('cat')">Add Cat Sprite</button>
-</div>
-
-<!-- Paint Editor for Custom Sprites -->
-<div id="paintEditor">
-    <label for="paint">Draw your sprite:</label>
-    <input type="file" id="paint" accept="image/*" onchange="uploadSprite(event)">
-</div>
-
-<!-- Workspace for blocks -->
+<!-- Drag-and-Drop Blocks for building the game -->
 <div id="workspace">
-    <div class="block" onclick="createMoveBlock()">Move X</div>
-    <div class="block" onclick="createMoveBlock('Y')">Move Y</div>
-    <div class="block" onclick="createIfBlock()">If Touching Edge</div>
-    <div class="block" onclick="createKeyBlock()">When Arrow Key Pressed</div>
+    <div class="block" draggable="true" ondragstart="drag(event)" id="moveX">Move X</div>
+    <div class="block" draggable="true" ondragstart="drag(event)" id="moveY">Move Y</div>
+    <div class="block" draggable="true" ondragstart="drag(event)" id="flag">When Flag Pressed</div>
+    <div class="block" draggable="true" ondragstart="drag(event)" id="keyPress">When Key Pressed</div>
 </div>
 
-<!-- Flag to Run Code -->
-<h2>Press Flag to Run</h2>
-<button id="flagButton" onclick="runCode()">🏳️</button>
-
-<!-- Game Canvas -->
-<h2>Game Preview</h2>
+<!-- Game Preview -->
 <canvas id="gameCanvas"></canvas>
 
 <script>
-// Setup Canvas and Sprites
+let draggedBlock = null;
+
+// Drag and Drop Events
+function drag(event) {
+    draggedBlock = event.target.id;  // Store the ID of the dragged block
+}
+
+function drop(event) {
+    event.preventDefault();
+    if (draggedBlock === 'moveX') {
+        moveX(10);  // Example of move X action
+    } else if (draggedBlock === 'moveY') {
+        moveY(10);  // Example of move Y action
+    }
+    // You can expand this for other blocks like flag, keyPress, etc.
+}
+
+// Prevent default behavior for dragover
+document.getElementById('workspace').ondragover = (event) => event.preventDefault();
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-let sprites = [];
-let flagClicked = false;
+let posX = 50, posY = 50;
 
-// Add sprites (e.g., dog or custom)
-function addSprite(type) {
-    let sprite = { type: type, x: 50, y: 50, image: new Image() };
-    if (type === 'dog') sprite.image.src = 'https://img.icons8.com/plasticine/2x/dog.png';
-    if (type === 'cat') sprite.image.src = 'https://img.icons8.com/plasticine/2x/cat.png';
-    sprite.image.onload = () => drawSprites();
-    sprites.push(sprite);
-}
-
-// Upload Custom Sprites from Paint Editor
-function uploadSprite(event) {
-    let file = event.target.files[0];
-    let sprite = { type: 'custom', x: 50, y: 50, image: new Image() };
-    sprite.image.src = URL.createObjectURL(file);
-    sprite.image.onload = () => drawSprites();
-    sprites.push(sprite);
-}
-
-// Drawing all sprites on the canvas
-function drawSprites() {
+function moveX(distance) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    sprites.forEach(sprite => ctx.drawImage(sprite.image, sprite.x, sprite.y, 80, 80));
+    posX += distance;
+    ctx.fillRect(posX, posY, 50, 50);  // Simple representation of sprite
 }
 
-// Block Functions
-let codeBlocks = []; // Store blocks to run later
-
-// Move X or Y block with input value
-function createMoveBlock(axis = 'X') {
-    let block = document.createElement('div');
-    block.className = 'block';
-    block.innerHTML = `Move ${axis} by <input type="number" value="10" id="input${axis}">`;
-    document.getElementById('workspace').appendChild(block);
-    codeBlocks.push(() => {
-        let distance = parseInt(document.getElementById(`input${axis}`).value);
-        if (axis === 'X') sprites[0].x += distance;
-        if (axis === 'Y') sprites[0].y += distance;
-        drawSprites();
-    });
+function moveY(distance) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    posY += distance;
+    ctx.fillRect(posX, posY, 50, 50);  // Simple representation of sprite
 }
 
-// Keyboard input block
-function createKeyBlock() {
-    codeBlocks.push(() => {
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'ArrowRight') sprites[0].x += 10;
-            if (event.key === 'ArrowLeft') sprites[0].x -= 10;
-            if (event.key === 'ArrowUp') sprites[0].y -= 10;
-            if (event.key === 'ArrowDown') sprites[0].y += 10;
-            drawSprites();
-        });
-    });
-}
-
-// If touching edge block
-function createIfBlock() {
-    codeBlocks.push(() => {
-        if (sprites[0].x + 80 >= canvas.width || sprites[0].y + 80 >= canvas.height || sprites[0].x <= 0 || sprites[0].y <= 0) {
-            alert('Sprite touching edge!');
-        }
-    });
-}
-
-// Flag Function to Run Code
 function runCode() {
-    flagClicked = true;
-    codeBlocks.forEach(fn => fn());
+    // Only run the blocks connected to "when flag pressed"
+    // Implement logic to check for connected blocks and execute them
 }
+
+document.getElementById('flag').onclick = runCode;
+
+// Saving the project (in local storage for now)
+function saveProject() {
+    const projectData = {
+        blocks: document.getElementById('workspace').innerHTML,
+        positionX: posX,
+        positionY: posY
+    };
+    localStorage.setItem('codenfun_project', JSON.stringify(projectData));
+}
+
+function loadProject() {
+    const savedProject = localStorage.getItem('codenfun_project');
+    if (savedProject) {
+        const projectData = JSON.parse(savedProject);
+        document.getElementById('workspace').innerHTML = projectData.blocks;
+        posX = projectData.positionX;
+        posY = projectData.positionY;
+        ctx.fillRect(posX, posY, 50, 50);  // Restore sprite position
+    }
+}
+
+window.onload = loadProject;
 </script>
 
 </body>
